@@ -1,10 +1,13 @@
 package com.concert.backend.auth.presentation;
 
 import com.concert.backend.auth.application.RefreshTokenCookieProvider;
+import com.concert.backend.auth.application.ReissueTokenService;
 import com.concert.backend.auth.application.SignInService;
 import com.concert.backend.auth.application.SignUpService;
 import com.concert.backend.auth.dto.request.SignInRequest;
 import com.concert.backend.auth.dto.request.SignUpRequest;
+import com.concert.backend.auth.dto.response.ReissueResponse;
+import com.concert.backend.auth.dto.response.ReissueTokenResult;
 import com.concert.backend.auth.dto.response.SignInResponse;
 import com.concert.backend.auth.dto.response.SignInResult;
 import com.concert.backend.auth.dto.response.SignUpResponse;
@@ -12,6 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +30,7 @@ public class AuthController {
     private final SignUpService signUpService;
     private final SignInService signInService;
     private final RefreshTokenCookieProvider cookieProvider;
+    private final ReissueTokenService reissueTokenService;
 
 
     @PostMapping("/sign-up")
@@ -49,6 +54,26 @@ public class AuthController {
         );
 
         return SignInResponse.from(signInResult);
+    }
+
+    @PostMapping("/reissue")
+    public ReissueResponse reissue(
+            @CookieValue(value = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse servletResponse
+    ) {
+        ReissueTokenResult reissueTokenResult = reissueTokenService.reissue(refreshToken);
+
+        cookieProvider.addRefreshTokenCookie(
+                servletResponse,
+                reissueTokenResult.newRefreshToken(),
+                reissueTokenResult.refreshTokenRemainingSecond()
+        );
+
+        return ReissueResponse.of(
+                reissueTokenResult.memberId(),
+                reissueTokenResult.newAccessToken(),
+                reissueTokenResult.newRefreshToken()
+        );
     }
 
 
