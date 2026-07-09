@@ -3,6 +3,7 @@ package com.concert.backend.auth.presentation;
 import com.concert.backend.auth.application.RefreshTokenCookieProvider;
 import com.concert.backend.auth.application.ReissueTokenService;
 import com.concert.backend.auth.application.SignInService;
+import com.concert.backend.auth.application.SignOutService;
 import com.concert.backend.auth.application.SignUpService;
 import com.concert.backend.auth.dto.request.SignInRequest;
 import com.concert.backend.auth.dto.request.SignUpRequest;
@@ -31,6 +32,7 @@ public class AuthController {
     private final SignInService signInService;
     private final RefreshTokenCookieProvider cookieProvider;
     private final ReissueTokenService reissueTokenService;
+    private final SignOutService signOutService;
 
 
     @PostMapping("/sign-up")
@@ -76,5 +78,14 @@ public class AuthController {
         );
     }
 
+    @PostMapping("/sign-out")
+    public Void signOut(
+            @CookieValue(value = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response
+    ) {
+        signOutService.signOut(refreshToken);
+        cookieProvider.removeRefreshTokenCookie(response);
 
+        return null;
+    }
 }

@@ -19,6 +19,8 @@ public enum AuthErrorCode implements ErrorCode {
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "auth: Invalid Password."),
     TOKEN_STORE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "auth: The token store is unavailable."),
     MISSING_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "auth: Refresh token not found."),
+    MISMATCH_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "auth: The refresh token does not match."),
+
     ;
 
 
