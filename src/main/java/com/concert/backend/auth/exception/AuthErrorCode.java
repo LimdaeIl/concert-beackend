@@ -18,6 +18,7 @@ public enum AuthErrorCode implements ErrorCode {
     NOT_FOUND_MEMBER(HttpStatus.NOT_FOUND, "auth: Member ID '%s' not found." ),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "auth: Invalid Password."),
     TOKEN_STORE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "auth: The token store is unavailable."),
+    MISSING_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "auth: Refresh token not found."),
     ;
 
 
