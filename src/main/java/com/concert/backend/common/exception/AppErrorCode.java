@@ -8,10 +8,13 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum AppErrorCode implements ErrorCode {
 
-    INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "common: invalid input value"),
-    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "common: not allowed method"),
-    ENTITY_NOT_FOUND(HttpStatus.NOT_FOUND, "common: entity not found"),
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "common: internal server error");
+
+    INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "Invalid request data."),
+    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "HTTP method is not allowed."),
+    ENTITY_NOT_FOUND(HttpStatus.NOT_FOUND, "Requested resource was not found."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected server error occurred."),
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Authentication is required."),
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, "You do not have permission to access this resource.");
 
 
     private final HttpStatus httpStatus;
