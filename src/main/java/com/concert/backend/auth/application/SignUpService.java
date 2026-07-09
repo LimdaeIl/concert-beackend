@@ -3,6 +3,8 @@ package com.concert.backend.auth.application;
 import com.concert.backend.auth.domain.Credential;
 import com.concert.backend.auth.dto.request.SignUpRequest;
 import com.concert.backend.auth.dto.response.SignUpResponse;
+import com.concert.backend.auth.exception.AuthErrorCode;
+import com.concert.backend.auth.exception.AuthException;
 import com.concert.backend.auth.infrastructure.CredentialRepository;
 import com.concert.backend.member.domain.Member;
 import com.concert.backend.member.infrastructure.MemberRepository;
@@ -21,11 +23,11 @@ public class SignUpService {
     public SignUpResponse signUp(SignUpRequest request) {
 
         if (memberRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("signUp: already exists By Email");
+            throw new AuthException(AuthErrorCode.DUPLICATE_EMAIL, request.email());
         }
 
         if (memberRepository.existsByPhone(request.phone())) {
-            throw new IllegalArgumentException("signUp: already exists By Phone");
+            throw new AuthException(AuthErrorCode.DUPLICATE_PHONE, request.phone());
         }
 
         Member member = Member.create(
@@ -37,7 +39,6 @@ public class SignUpService {
         memberRepository.save(member);
 
         Credential credential = Credential.create(member.getId(), request.password());
-
         credentialRepository.save(credential);
 
         return SignUpResponse.from(member);
