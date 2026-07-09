@@ -25,14 +25,11 @@ public class Member {
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(name = "name", nullable = false, unique = true, length = 10)
+    @Column(name = "name", nullable = false, length = 50)
     private String name;
 
     @Column(name = "phone", nullable = false, unique = true, length = 11)
     private String phone;
-
-    @Column(name = "age", nullable = false)
-    private String age;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
@@ -41,5 +38,39 @@ public class Member {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private MemberStatus status;
+
+    private Member(String email, String name, String phone) {
+        this.email = email;
+        this.name = name;
+        this.phone = phone;
+        this.role = MemberRole.MEMBER;
+        this.status = MemberStatus.ACTIVATE;
+    }
+
+    public static Member create(String email, String name, String phone) {
+        validateEmail(email);
+        validateName(name);
+        validatePhone(phone);
+
+        return new Member(email, name, phone);
+    }
+
+    private static void validatePhone(String phone) {
+        if (phone == null || phone.isEmpty()) {
+            throw new IllegalArgumentException("Phone cannot be null or empty");
+        }
+    }
+
+    private static void validateName(String name) {
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("Name cannot be null or empty");
+        }
+    }
+
+    private static void validateEmail(String email) {
+        if (email == null || email.isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be null or empty");
+        }
+    }
 
 }

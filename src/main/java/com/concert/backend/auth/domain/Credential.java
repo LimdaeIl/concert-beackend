@@ -26,4 +26,13 @@ public class Credential {
     @Column(name = "password")
     private String password;
 
+    private Credential(Long memberId, String password) {
+        this.memberId = memberId;
+        this.password = password;
+    }
+
+    public static Credential create(Long memberId, String password) {
+        return new Credential(memberId, password);
+    }
+
 }
