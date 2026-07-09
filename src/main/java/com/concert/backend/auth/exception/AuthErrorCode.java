@@ -8,8 +8,13 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum AuthErrorCode implements ErrorCode {
-    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "The email '%s' is already registered."),
-    DUPLICATE_PHONE(HttpStatus.CONFLICT, "The phone number '%s' is already in use.");
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "auth: The email '%s' is already registered."),
+    DUPLICATE_PHONE(HttpStatus.CONFLICT, "auth: The phone number '%s' is already in use."),
+    EXPIRED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "auth: Expired Access Token."),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "auth: Expired Refresh Token."),
+    INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "auth: Invalid Access Token."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "auth: Invalid Refresh Token."),
+    INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED, "auth: Invalid Token Type."),;
 
     private final HttpStatus httpStatus;
     private final String messageTemplate;
