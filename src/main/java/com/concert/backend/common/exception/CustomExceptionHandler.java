@@ -10,6 +10,9 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -101,26 +104,26 @@ public class CustomExceptionHandler {
         return appError(AppErrorCode.ENTITY_NOT_FOUND, request);
     }
 
-//    // 인가 실패 예외를 Access Denied 응답으로 변환한다.
-//    @ExceptionHandler({
-//            AccessDeniedException.class,
-//            AuthorizationDeniedException.class
-//    })
-//    public ResponseEntity<ErrorResponse> handleAccessDenied(
-//            Exception ex,
-//            HttpServletRequest request
-//    ) {
-//        return appError(AppErrorCode.ACCESS_DENIED, request);
-//    }
-//
-//    // 인증 실패 예외를 Unauthorized 응답으로 변환한다.
-//    @ExceptionHandler(AuthenticationException.class)
-//    public ResponseEntity<ErrorResponse> handleAuthentication(
-//            AuthenticationException ex,
-//            HttpServletRequest request
-//    ) {
-//        return appError(AppErrorCode.UNAUTHORIZED, request);
-//    }
+    // 인가 실패 예외를 Access Denied 응답으로 변환한다.
+    @ExceptionHandler({
+            AccessDeniedException.class,
+            AuthorizationDeniedException.class
+    })
+    public ResponseEntity<ErrorResponse> handleAccessDenied(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        return appError(AppErrorCode.ACCESS_DENIED, request);
+    }
+
+    // 인증 실패 예외를 Unauthorized 응답으로 변환한다.
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(
+            AuthenticationException ex,
+            HttpServletRequest request
+    ) {
+        return appError(AppErrorCode.UNAUTHORIZED, request);
+    }
 
     // 처리되지 않은 예외를 로깅하고 Internal Server Error 응답으로 변환한다.
     @ExceptionHandler(Exception.class)
@@ -178,7 +181,8 @@ public class CustomExceptionHandler {
             HttpServletRequest request,
             List<ValidationError> errors
     ) {
-        return error(AppErrorCode.INVALID_INPUT_VALUE, AppErrorCode.INVALID_INPUT_VALUE.message(), request, null, errors);
+        return error(AppErrorCode.INVALID_INPUT_VALUE, AppErrorCode.INVALID_INPUT_VALUE.message(),
+                request, null, errors);
     }
 
     // ErrorCode 정보를 RFC 7807 형태의 공통 오류 응답으로 조립한다.
