@@ -5,10 +5,11 @@ import com.concert.backend.auth.dto.request.SignUpRequest;
 import com.concert.backend.auth.dto.response.SignUpResponse;
 import com.concert.backend.auth.exception.AuthErrorCode;
 import com.concert.backend.auth.exception.AuthException;
-import com.concert.backend.auth.infrastructure.CredentialRepository;
+import com.concert.backend.auth.infrastructure.jpa.CredentialRepository;
 import com.concert.backend.member.domain.Member;
 import com.concert.backend.member.infrastructure.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ public class SignUpService {
 
     private final CredentialRepository credentialRepository;
     private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public SignUpResponse signUp(SignUpRequest request) {
 
@@ -38,7 +40,7 @@ public class SignUpService {
 
         memberRepository.save(member);
 
-        Credential credential = Credential.create(member.getId(), request.password());
+        Credential credential = Credential.create(member.getId(), passwordEncoder.encode(request.password()));
         credentialRepository.save(credential);
 
         return SignUpResponse.from(member);

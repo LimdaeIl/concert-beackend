@@ -14,7 +14,13 @@ public enum AuthErrorCode implements ErrorCode {
     EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "auth: Expired Refresh Token."),
     INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "auth: Invalid Access Token."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "auth: Invalid Refresh Token."),
-    INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED, "auth: Invalid Token Type."),;
+    INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED, "auth: Invalid Token Type."),
+    NOT_FOUND_MEMBER(HttpStatus.NOT_FOUND, "auth: Member ID '%s' not found." ),
+    INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "auth: Invalid Password."),
+    TOKEN_STORE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "auth: The token store is unavailable."),
+    ;
+
+
 
     private final HttpStatus httpStatus;
     private final String messageTemplate;
