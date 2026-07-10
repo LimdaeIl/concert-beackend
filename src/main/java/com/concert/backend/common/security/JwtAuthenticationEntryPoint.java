@@ -1,46 +1,33 @@
 package com.concert.backend.common.security;
 
-import com.concert.backend.common.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-    private final ObjectMapper objectMapper;
+    private final SecurityErrorResponseWriter responseWriter;
 
     @Override
     public void commence(
             HttpServletRequest request,
             HttpServletResponse response,
-            AuthenticationException authException
+            AuthenticationException authenticationException
     ) throws IOException {
-        HttpStatus status = HttpStatus.UNAUTHORIZED;
-
-        ErrorResponse body = ErrorResponse.of(
-                "about:blank",
-                "Unauthorized",
-                status,
-                "Authentication is required.",
-                request.getRequestURI(),
-                "AUTHENTICATION_REQUIRED"
+        responseWriter.write(
+                request,
+                response,
+                HttpStatus.UNAUTHORIZED,
+                "UNAUTHORIZED",
+                "Authentication is required to access this resource.",
+                "실패: 인증이 필요합니다."
         );
-
-        response.setStatus(status.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding("UTF-8");
-
-        objectMapper.writeValue(response.getWriter(), body);
     }
 }
-
-

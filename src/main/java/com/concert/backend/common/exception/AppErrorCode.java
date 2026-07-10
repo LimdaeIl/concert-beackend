@@ -14,7 +14,10 @@ public enum AppErrorCode implements ErrorCode {
     ENTITY_NOT_FOUND(HttpStatus.NOT_FOUND, "Requested resource was not found."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected server error occurred."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Authentication is required."),
-    ACCESS_DENIED(HttpStatus.FORBIDDEN, "You do not have permission to access this resource.");
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, "You do not have permission to access this resource."),
+    INVALID_JSON_FORMAT(HttpStatus.BAD_REQUEST, "Invalid JSON request format."),
+    INVALID_ENUM_VALUE(HttpStatus.BAD_REQUEST, "Invalid enum value."),
+    INVALID_TITLE(HttpStatus.BAD_REQUEST, "concert: Concert title is invalid.");
 
 
     private final HttpStatus httpStatus;
