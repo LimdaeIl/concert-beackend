@@ -1,5 +1,6 @@
 package com.concert.backend.concert.domain.concertschedule;
 
+import com.concert.backend.common.audit.BaseAuditEntity;
 import com.concert.backend.concert.domain.concert.Concert;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "v1_concert_schedules")
 @Entity
-public class ConcertSchedule {
+public class ConcertSchedule extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
