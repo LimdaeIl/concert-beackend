@@ -1,0 +1,751 @@
+### 공통 환경 변수
+@host = http://localhost:8080
+@venueUrl = {{host}}/api/v1/venues
+@concertUrl = {{host}}/api/v1/concerts
+
+@adminAccessToken = eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI2MjBlZTRkNy1iMDJmLTQyMDQtYTgxNS0zNWU1ZWUzZGNhMmQiLCJzdWIiOiIxIiwidG9rZW5UeXBlIjoiYWNjZXNzIiwiaWF0IjoxNzgzNjcwMTA2LCJleHAiOjE3ODM2NzM3MDYsInJvbGUiOiJBRE1JTiJ9.hOcFlSZoDhz2zX66UVsjCP6ADo6WKL4h0RAQJm31t71vu-Q2erp_bP7_AywFRaoctrcy2OmxA6wfvG2o93bz4g
+
+
+### 로그인 이후 받은 관리자 Access Token을 입력
+###
+POST http://localhost:8080/api/v1/auth/sign-up
+Content-Type: application/json
+
+{
+  "email": "test@test.com",
+  "password": "test1234!",
+  "name": "test",
+  "phone": "01012341234"
+}
+
+
+###
+POST http://localhost:8080/api/v1/auth/sign-in
+Content-Type: application/json
+
+{
+  "email": "test@test.com",
+  "password": "test1234!"
+}
+
+
+###############################################################################
+# Venue 생성 테스트
+###############################################################################
+
+### 1. 공연장 생성 성공
+POST {{venueUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "venueName": "올림픽공원",
+  "address": "서울특별시 송파구 올림픽로 424",
+  "detailAddress": "올림픽공원",
+  "latitude": 37.5192,
+  "longitude": 127.1158,
+  "venueHalls": [
+    {
+      "hallName": "KSPO DOME",
+      "capacity": 15000
+    },
+    {
+      "hallName": "올림픽홀",
+      "capacity": 2452
+    }
+  ]
+}
+
+
+### 2. 공연장 생성 실패 - 공연장 이름 누락
+POST {{venueUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "venueName": "",
+  "address": "서울특별시 송파구 올림픽로 424",
+  "detailAddress": "올림픽공원",
+  "latitude": 37.5192,
+  "longitude": 127.1158,
+  "venueHalls": [
+    {
+      "hallName": "KSPO DOME",
+      "capacity": 15000
+    }
+  ]
+}
+
+
+### 3. 공연장 생성 실패 - 홀 목록 비어 있음
+POST {{venueUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "venueName": "올림픽공원",
+  "address": "서울특별시 송파구 올림픽로 424",
+  "detailAddress": "올림픽공원",
+  "latitude": 37.5192,
+  "longitude": 127.1158,
+  "venueHalls": []
+}
+
+
+### 4. 공연장 생성 실패 - 홀 이름 누락
+POST {{venueUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "venueName": "올림픽공원",
+  "address": "서울특별시 송파구 올림픽로 424",
+  "detailAddress": "올림픽공원",
+  "latitude": 37.5192,
+  "longitude": 127.1158,
+  "venueHalls": [
+    {
+      "hallName": "",
+      "capacity": 15000
+    }
+  ]
+}
+
+
+### 5. 공연장 생성 실패 - 수용 인원 0명
+POST {{venueUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "venueName": "올림픽공원",
+  "address": "서울특별시 송파구 올림픽로 424",
+  "detailAddress": "올림픽공원",
+  "latitude": 37.5192,
+  "longitude": 127.1158,
+  "venueHalls": [
+    {
+      "hallName": "KSPO DOME",
+      "capacity": 0
+    }
+  ]
+}
+
+
+### 6. 공연장 생성 실패 - 잘못된 위도
+POST {{venueUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "venueName": "올림픽공원",
+  "address": "서울특별시 송파구 올림픽로 424",
+  "detailAddress": "올림픽공원",
+  "latitude": 100.0,
+  "longitude": 127.1158,
+  "venueHalls": [
+    {
+      "hallName": "KSPO DOME",
+      "capacity": 15000
+    }
+  ]
+}
+
+
+### 7. 공연장 생성 실패 - 잘못된 경도
+POST {{venueUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "venueName": "올림픽공원",
+  "address": "서울특별시 송파구 올림픽로 424",
+  "detailAddress": "올림픽공원",
+  "latitude": 37.5192,
+  "longitude": 200.0,
+  "venueHalls": [
+    {
+      "hallName": "KSPO DOME",
+      "capacity": 15000
+    }
+  ]
+}
+
+
+###############################################################################
+# Concert 생성 성공 테스트
+#
+# 주의:
+# venueHallId는 위 공연장 생성 성공 응답으로 받은 실제 홀 ID로 변경해야 합니다.
+###############################################################################
+
+### 8. 콘서트 생성 성공 - 스케줄 2개, 이미지 2개
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "2026 여름 콘서트",
+  "description": "2026년 여름에 진행되는 콘서트입니다.",
+  "organizer": "Concert Company",
+  "category": "BAND",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    },
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-21T18:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-21T16:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/concert-main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    },
+    {
+      "imageUrl": "https://example.com/images/concert-detail.jpg",
+      "sortOrder": 1,
+      "representative": false
+    }
+  ]
+}
+
+
+### 9. 콘서트 생성 성공 - 같은 시간, 서로 다른 홀
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "멀티홀 콘서트",
+  "description": "같은 시간에 서로 다른 홀을 사용하는 테스트입니다.",
+  "organizer": "Concert Company",
+  "category": "ROCK",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-09-01T19:00:00",
+      "bookingStartAt": "2026-08-01T12:00:00",
+      "bookingEndAt": "2026-09-01T17:00:00"
+    },
+    {
+      "venueHallId": 2,
+      "performanceAt": "2026-09-01T19:00:00",
+      "bookingStartAt": "2026-08-01T12:00:00",
+      "bookingEndAt": "2026-09-01T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/multi-hall.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+###############################################################################
+# Concert Bean Validation 실패 테스트
+###############################################################################
+
+### 10. 콘서트 생성 실패 - 제목 누락
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "",
+  "description": "제목 누락 테스트",
+  "organizer": "Concert Company",
+  "category": "BAND",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+### 11. 콘서트 생성 실패 - 카테고리 누락
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "카테고리 누락 콘서트",
+  "description": "카테고리 누락 테스트",
+  "organizer": "Concert Company",
+  "category": null,
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+### 12. 콘서트 생성 실패 - 존재하지 않는 enum 카테고리
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "잘못된 카테고리 콘서트",
+  "description": "존재하지 않는 enum 값 테스트",
+  "organizer": "Concert Company",
+  "category": "JAZZ",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+### 13. 콘서트 생성 실패 - 스케줄 목록 비어 있음
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "스케줄 없는 콘서트",
+  "description": "스케줄 목록 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "BAND",
+  "schedules": [],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+### 14. 콘서트 생성 실패 - 이미지 목록 비어 있음
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "이미지 없는 콘서트",
+  "description": "이미지 목록 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "BAND",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": []
+}
+
+
+### 15. 콘서트 생성 실패 - 공연 홀 ID 음수
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "잘못된 홀 ID 콘서트",
+  "description": "홀 ID 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "BAND",
+  "schedules": [
+    {
+      "venueHallId": -1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+### 16. 콘서트 생성 실패 - 이미지 URL 공백
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "이미지 URL 누락 콘서트",
+  "description": "이미지 URL 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "BAND",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+### 17. 콘서트 생성 실패 - 이미지 정렬 순서 음수
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "잘못된 정렬 순서 콘서트",
+  "description": "이미지 정렬 순서 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "BAND",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": -1,
+      "representative": true
+    }
+  ]
+}
+
+
+###############################################################################
+# Concert 도메인 규칙 실패 테스트
+###############################################################################
+
+### 18. 콘서트 생성 실패 - 대표 이미지 없음
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "대표 이미지 없는 콘서트",
+  "description": "대표 이미지 개수 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "IDOL",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/one.jpg",
+      "sortOrder": 0,
+      "representative": false
+    },
+    {
+      "imageUrl": "https://example.com/images/two.jpg",
+      "sortOrder": 1,
+      "representative": false
+    }
+  ]
+}
+
+
+### 19. 콘서트 생성 실패 - 대표 이미지 2개
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "대표 이미지가 여러 개인 콘서트",
+  "description": "대표 이미지 개수 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "IDOL",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/one.jpg",
+      "sortOrder": 0,
+      "representative": true
+    },
+    {
+      "imageUrl": "https://example.com/images/two.jpg",
+      "sortOrder": 1,
+      "representative": true
+    }
+  ]
+}
+
+
+### 20. 콘서트 생성 실패 - 이미지 sortOrder 중복
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "이미지 순서 중복 콘서트",
+  "description": "이미지 정렬 순서 중복 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "ROCK",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/one.jpg",
+      "sortOrder": 0,
+      "representative": true
+    },
+    {
+      "imageUrl": "https://example.com/images/two.jpg",
+      "sortOrder": 0,
+      "representative": false
+    }
+  ]
+}
+
+
+### 21. 콘서트 생성 실패 - 같은 홀과 같은 공연 일시 중복
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "중복 일정 콘서트",
+  "description": "동일 홀 및 동일 공연 시간 중복 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "DANCE",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    },
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-21T12:00:00",
+      "bookingEndAt": "2026-08-20T16:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+### 22. 콘서트 생성 실패 - 예매 시작이 예매 종료보다 늦음
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "잘못된 예매 기간 콘서트",
+  "description": "예매 시작 및 종료 순서 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "HIPHOP",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-08-10T18:00:00",
+      "bookingEndAt": "2026-08-10T12:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+### 23. 콘서트 생성 실패 - 예매 종료가 공연 시각보다 늦음
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "공연 이후 예매 종료 콘서트",
+  "description": "예매 종료 시간 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "HIPHOP",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T20:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+### 24. 콘서트 생성 실패 - 예매 종료와 공연 시각이 같음
+# 현재 도메인 규칙:
+# bookingEndAt < performanceAt
+# 따라서 두 시각이 같으면 실패해야 함
+POST {{concertUrl}}
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "title": "예매 종료와 공연 시각이 같은 콘서트",
+  "description": "예매 종료와 공연 시각 동일 조건 테스트",
+  "organizer": "Concert Company",
+  "category": "BALLADE",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T19:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+###############################################################################
+# 인증 및 권한 실패 테스트
+###############################################################################
+
+### 25. 콘서트 생성 실패 - Access Token 없음
+POST {{concertUrl}}
+Content-Type: application/json
+
+{
+  "title": "인증 없는 콘서트",
+  "description": "Access Token 누락 테스트",
+  "organizer": "Concert Company",
+  "category": "BAND",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}
+
+
+### 26. 콘서트 생성 실패 - 일반 회원 Access Token
+# 아래 토큰을 실제 MEMBER 권한 Access Token으로 변경
+POST {{concertUrl}}
+Authorization: Bearer MEMBER_ACCESS_TOKEN
+Content-Type: application/json
+
+{
+  "title": "권한 없는 콘서트",
+  "description": "ADMIN 권한 검증 테스트",
+  "organizer": "Concert Company",
+  "category": "BAND",
+  "schedules": [
+    {
+      "venueHallId": 1,
+      "performanceAt": "2026-08-20T19:00:00",
+      "bookingStartAt": "2026-07-20T12:00:00",
+      "bookingEndAt": "2026-08-20T17:00:00"
+    }
+  ],
+  "images": [
+    {
+      "imageUrl": "https://example.com/images/main.jpg",
+      "sortOrder": 0,
+      "representative": true
+    }
+  ]
+}

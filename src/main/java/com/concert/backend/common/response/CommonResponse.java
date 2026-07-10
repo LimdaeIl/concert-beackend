@@ -1,11 +1,7 @@
 package com.concert.backend.common.response;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record CommonResponse<T>(
         boolean success,
         int status,
@@ -13,4 +9,34 @@ public record CommonResponse<T>(
         T data,
         LocalDateTime timestamp
 ) {
+
+    public static <T> CommonResponse<T> success(
+            int status,
+            String message,
+            T data,
+            LocalDateTime timestamp
+    ) {
+        return new CommonResponse<>(
+                true,
+                status,
+                message,
+                data,
+                timestamp
+        );
+    }
+
+    public static <T> CommonResponse<T> failure(
+            int status,
+            String message,
+            T data,
+            LocalDateTime timestamp
+    ) {
+        return new CommonResponse<>(
+                false,
+                status,
+                message,
+                data,
+                timestamp
+        );
+    }
 }

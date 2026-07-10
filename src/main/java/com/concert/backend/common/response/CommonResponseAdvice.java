@@ -28,7 +28,25 @@ public class CommonResponseAdvice implements ResponseBodyAdvice<Object> {
             MethodParameter returnType,
             Class<? extends HttpMessageConverter<?>> converterType
     ) {
-        return true;
+        Class<?> controllerType = returnType.getContainingClass();
+
+        Package declaringPackage = controllerType.getPackage();
+
+        if (declaringPackage == null
+                || !declaringPackage.getName()
+                .startsWith("com.concert.backend")) {
+            return false;
+        }
+
+        boolean methodSkipped = returnType.hasMethodAnnotation(
+                SkipCommonResponse.class
+        );
+
+        boolean classSkipped = controllerType.isAnnotationPresent(
+                SkipCommonResponse.class
+        );
+
+        return !methodSkipped && !classSkipped;
     }
 
     @Override
@@ -48,15 +66,31 @@ public class CommonResponseAdvice implements ResponseBodyAdvice<Object> {
             return body;
         }
 
+        if (!isJson(selectedContentType)) {
+            return body;
+        }
+
         int status = getStatus(response);
 
-        return new CommonResponse<>(
-                true,
+        if (status == 204) {
+            return null;
+        }
+
+        if (status >= 400) {
+            return body;
+        }
+
+        return CommonResponse.success(
                 status,
                 successMessage(status),
                 body,
-                LocalDateTime.ofInstant(clock.instant(), SEOUL)
+                now()
         );
+    }
+
+    private boolean isJson(MediaType mediaType) {
+        return MediaType.APPLICATION_JSON.isCompatibleWith(mediaType)
+                || mediaType.getSubtype().endsWith("+json");
     }
 
     private int getStatus(ServerHttpResponse response) {
@@ -73,5 +107,9 @@ public class CommonResponseAdvice implements ResponseBodyAdvice<Object> {
             case 204 -> "성공: 요청이 성공적으로 처리되었습니다.";
             default -> "성공: 요청이 성공적으로 처리되었습니다.";
         };
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.ofInstant(clock.instant(), SEOUL);
     }
 }

@@ -1,13 +1,18 @@
 package com.concert.backend.common.exception;
 
-
+import com.concert.backend.common.config.RequestTraceFilter;
+import com.concert.backend.common.response.CommonResponse;
 import com.concert.backend.common.response.ErrorResponse;
 import com.concert.backend.common.response.ErrorResponse.ValidationError;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -19,198 +24,359 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 @Slf4j(topic = "CustomExceptionHandler")
 @RestControllerAdvice
 public class CustomExceptionHandler {
 
     private static final String PROBLEM_BASE_URI = "about:blank/";
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
-    // 비즈니스 예외를 ErrorCode 기반 응답으로 변환한다.
-    @ExceptionHandler(AppException.class)
-    public ResponseEntity<ErrorResponse> handleApp(AppException ex, HttpServletRequest request) {
-        ErrorCode code = ex.getErrorCode();
-        return error(code, ex.getMessage(), request, ex.getParameters(), null);
+    private final Clock clock;
+
+    public CustomExceptionHandler(Clock clock) {
+        this.clock = clock;
     }
 
-    // RequestBody 검증 실패 예외를 필드 오류 목록으로 변환한다.
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleApp(
+            AppException ex,
+            HttpServletRequest request
+    ) {
+        ErrorCode code = ex.getErrorCode();
+
+        log.warn(
+                "비즈니스 예외. traceId={}, errorCode={}, method={}, uri={}",
+                MDC.get(RequestTraceFilter.TRACE_ID),
+                code.code(),
+                request.getMethod(),
+                request.getRequestURI()
+        );
+
+        return error(
+                code,
+                ex.getMessage(),
+                request,
+                ex.getParameters(),
+                null
+        );
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidBody(
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleInvalidBody(
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
         return appError(request, extractFieldErrors(ex));
     }
 
-    // RequestParam, PathVariable 등 단일 값 검증 실패 예외를 필드 오류 목록으로 변환한다.
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraint(
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleConstraint(
             ConstraintViolationException ex,
             HttpServletRequest request
     ) {
         return appError(request, extractFieldErrors(ex));
     }
 
-    // 필수 RequestParam 누락 예외를 잘못된 입력 응답으로 변환한다.
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ErrorResponse> handleMissingParameter(
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleMissingParameter(
             MissingServletRequestParameterException ex,
             HttpServletRequest request
     ) {
-        List<ErrorResponse.ValidationError> errors = List.of(
-                ErrorResponse.ValidationError.of(ex.getParameterName(), "필수 요청 파라미터입니다.")
+        List<ValidationError> errors = List.of(
+                ValidationError.of(
+                        ex.getParameterName(),
+                        "필수 요청 파라미터입니다."
+                )
         );
 
         return appError(request, errors);
     }
 
-    // RequestParam, PathVariable 타입 변환 실패 예외를 잘못된 입력 응답으로 변환한다.
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleTypeMismatch(
             MethodArgumentTypeMismatchException ex,
             HttpServletRequest request
     ) {
-        List<ErrorResponse.ValidationError> errors = List.of(
-                ErrorResponse.ValidationError.of(ex.getName(), "요청 값의 타입이 올바르지 않습니다.")
+        List<ValidationError> errors = List.of(
+                ValidationError.of(
+                        ex.getName(),
+                        "요청 값의 타입이 올바르지 않습니다."
+                )
         );
 
         return appError(request, errors);
     }
 
-    // 읽을 수 없는 요청 본문 형식 예외를 잘못된 입력 응답으로 변환한다.
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleNotReadable(
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleNotReadable(
             HttpMessageNotReadableException ex,
             HttpServletRequest request
     ) {
-        return appError(AppErrorCode.INVALID_INPUT_VALUE, request);
+        Throwable cause = ex.getCause();
+
+        if (cause instanceof InvalidFormatException invalidFormatException) {
+            return handleInvalidFormat(
+                    invalidFormatException,
+                    request
+            );
+        }
+
+        return appError(
+                AppErrorCode.INVALID_JSON_FORMAT,
+                request
+        );
     }
 
-    // 지원하지 않는 HTTP Method 요청을 Method Not Allowed 응답으로 변환한다.
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ErrorResponse> handleMethodNotAllowed(
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleMethodNotAllowed(
             HttpRequestMethodNotSupportedException ex,
             HttpServletRequest request
     ) {
         return appError(AppErrorCode.METHOD_NOT_ALLOWED, request);
     }
 
-    // JPA 엔티티 조회 실패 예외를 Entity Not Found 응답으로 변환한다.
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleNotFound(
             EntityNotFoundException ex,
             HttpServletRequest request
     ) {
         return appError(AppErrorCode.ENTITY_NOT_FOUND, request);
     }
 
-    // 인가 실패 예외를 Access Denied 응답으로 변환한다.
     @ExceptionHandler({
             AccessDeniedException.class,
             AuthorizationDeniedException.class
     })
-    public ResponseEntity<ErrorResponse> handleAccessDenied(
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleAccessDenied(
             Exception ex,
             HttpServletRequest request
     ) {
         return appError(AppErrorCode.ACCESS_DENIED, request);
     }
 
-    // 인증 실패 예외를 Unauthorized 응답으로 변환한다.
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponse> handleAuthentication(
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleAuthentication(
             AuthenticationException ex,
             HttpServletRequest request
     ) {
         return appError(AppErrorCode.UNAUTHORIZED, request);
     }
 
-    // 처리되지 않은 예외를 로깅하고 Internal Server Error 응답으로 변환한다.
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleAny(
+    public ResponseEntity<CommonResponse<ErrorResponse>> handleAny(
             Exception ex,
             HttpServletRequest request
     ) {
-        log.error("처리되지 않은 예외", ex);
-        return appError(AppErrorCode.INTERNAL_SERVER_ERROR, request);
+        String traceId = MDC.get(RequestTraceFilter.TRACE_ID);
+
+        log.error(
+                "처리되지 않은 예외. traceId={}, method={}, uri={}",
+                traceId,
+                request.getMethod(),
+                request.getRequestURI(),
+                ex
+        );
+
+        return appError(
+                AppErrorCode.INTERNAL_SERVER_ERROR,
+                request
+        );
     }
 
-    // RequestBody 검증 실패 항목을 공통 필드 오류 형식으로 변환한다.
-    private List<ErrorResponse.ValidationError> extractFieldErrors(
+    private ResponseEntity<CommonResponse<ErrorResponse>> handleInvalidFormat(
+            InvalidFormatException ex,
+            HttpServletRequest request
+    ) {
+        String field = ex.getPath()
+                .stream()
+                .map(reference -> {
+                    if (reference.getPropertyName() != null) {
+                        return reference.getPropertyName();
+                    }
+
+                    if (reference.getIndex() >= 0) {
+                        return "[" + reference.getIndex() + "]";
+                    }
+
+                    return "requestBody";
+                })
+                .reduce(this::joinPath)
+                .orElse("requestBody");
+
+        Class<?> targetType = ex.getTargetType();
+
+        if (targetType != null && targetType.isEnum()) {
+            String allowedValues = java.util.Arrays.stream(
+                            targetType.getEnumConstants()
+                    )
+                    .map(Object::toString)
+                    .collect(java.util.stream.Collectors.joining(", "));
+
+            List<ValidationError> errors = List.of(
+                    ValidationError.of(
+                            field,
+                            "허용되는 값은 [" + allowedValues + "]입니다."
+                    )
+            );
+
+            return error(
+                    AppErrorCode.INVALID_ENUM_VALUE,
+                    AppErrorCode.INVALID_ENUM_VALUE.message(),
+                    request,
+                    null,
+                    errors
+            );
+        }
+
+        List<ValidationError> errors = List.of(
+                ValidationError.of(
+                        field,
+                        "요청 값의 형식이 올바르지 않습니다."
+                )
+        );
+
+        return error(
+                AppErrorCode.INVALID_INPUT_VALUE,
+                AppErrorCode.INVALID_INPUT_VALUE.message(),
+                request,
+                null,
+                errors
+        );
+    }
+
+    private String joinPath(String left, String right) {
+        if (right.startsWith("[")) {
+            return left + right;
+        }
+
+        return left + "." + right;
+    }
+
+    private List<ValidationError> extractFieldErrors(
             MethodArgumentNotValidException ex
     ) {
         return ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(error -> ErrorResponse.ValidationError.of(
+                .map(error -> ValidationError.of(
                         error.getField(),
                         error.getDefaultMessage()
+                ))
+                .distinct()
+                .sorted(java.util.Comparator.comparing(
+                        ValidationError::field
                 ))
                 .toList();
     }
 
-    // ConstraintViolation 검증 실패 항목을 공통 필드 오류 형식으로 변환한다.
-    private List<ErrorResponse.ValidationError> extractFieldErrors(
+
+    private List<ValidationError> extractFieldErrors(
             ConstraintViolationException ex
     ) {
         return ex.getConstraintViolations()
                 .stream()
-                .map(violation -> ErrorResponse.ValidationError.of(
-                        extractFieldName(violation.getPropertyPath().toString()),
+                .map(violation -> ValidationError.of(
+                        violation.getPropertyPath().toString(),
                         violation.getMessage()
+                ))
+                .distinct()
+                .sorted(java.util.Comparator.comparing(
+                        ValidationError::field
                 ))
                 .toList();
     }
 
-    // 프로퍼티 경로에서 마지막 필드명만 추출한다.
     private String extractFieldName(String path) {
         int lastDotIndex = path.lastIndexOf('.');
-        return lastDotIndex == -1 ? path : path.substring(lastDotIndex + 1);
+        return lastDotIndex == -1
+                ? path
+                : path.substring(lastDotIndex + 1);
     }
 
-    // 애플리케이션 기본 오류 응답을 생성한다.
-    private ResponseEntity<ErrorResponse> appError(
+    private ResponseEntity<CommonResponse<ErrorResponse>> appError(
             AppErrorCode code,
             HttpServletRequest request
     ) {
-        return error(code, code.message(), request, null, null);
+        return error(
+                code,
+                code.message(),
+                request,
+                null,
+                null
+        );
     }
 
-    // 필드 오류 목록이 포함된 애플리케이션 오류 응답을 생성한다.
-    private ResponseEntity<ErrorResponse> appError(
+    private ResponseEntity<CommonResponse<ErrorResponse>> appError(
             HttpServletRequest request,
             List<ValidationError> errors
     ) {
-        return error(AppErrorCode.INVALID_INPUT_VALUE, AppErrorCode.INVALID_INPUT_VALUE.message(),
-                request, null, errors);
+        AppErrorCode code = AppErrorCode.INVALID_INPUT_VALUE;
+
+        return error(
+                code,
+                code.message(),
+                request,
+                null,
+                errors
+        );
     }
 
-    // ErrorCode 정보를 RFC 7807 형태의 공통 오류 응답으로 조립한다.
-    private ResponseEntity<ErrorResponse> error(
+    private ResponseEntity<CommonResponse<ErrorResponse>> error(
             ErrorCode code,
             String detail,
             HttpServletRequest request,
             List<Object> parameters,
-            List<ErrorResponse.ValidationError> errors
+            List<ValidationError> errors
     ) {
-        String title = code.code();
+        String errorCode = code.code();
+        String traceId = MDC.get(RequestTraceFilter.TRACE_ID);
 
-        return ResponseEntity.status(code.status())
-                .body(ErrorResponse.of(
-                        problemType(title),
-                        title,
-                        code.status(),
-                        detail,
-                        request.getRequestURI(),
-                        title,
-                        parameters,
-                        errors
-                ));
+        ErrorResponse errorResponse = ErrorResponse.of(
+                problemType(errorCode),
+                errorCode,
+                code.status(),
+                detail,
+                request.getRequestURI(),
+                errorCode,
+                traceId,
+                parameters,
+                errors
+        );
+
+        CommonResponse<ErrorResponse> commonResponse =
+                CommonResponse.failure(
+                        code.status().value(),
+                        failureMessage(code.status().value()),
+                        errorResponse,
+                        now()
+                );
+
+        return ResponseEntity
+                .status(code.status())
+                .body(commonResponse);
     }
 
-    // ErrorCode 이름을 problem type URI 형식으로 변환한다.
-    private String problemType(String title) {
-        return PROBLEM_BASE_URI + title.toLowerCase().replace('_', '-');
+    private String problemType(String errorCode) {
+        return PROBLEM_BASE_URI
+                + errorCode.toLowerCase().replace('_', '-');
+    }
+
+    private String failureMessage(int status) {
+        return switch (status) {
+            case 400 -> "실패: 요청값이 올바르지 않습니다.";
+            case 401 -> "실패: 인증이 필요합니다.";
+            case 403 -> "실패: 요청 권한이 없습니다.";
+            case 404 -> "실패: 요청한 리소스를 찾을 수 없습니다.";
+            case 405 -> "실패: 지원하지 않는 요청 방식입니다.";
+            case 409 -> "실패: 요청이 현재 상태와 충돌합니다.";
+            case 500 -> "실패: 서버 내부 오류가 발생했습니다.";
+            default -> "실패: 요청을 처리할 수 없습니다.";
+        };
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.ofInstant(clock.instant(), SEOUL);
     }
 }
-

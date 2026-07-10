@@ -12,6 +12,7 @@ public record ErrorResponse(
         String detail,
         String instance,
         String errorCode,
+        String traceId,
         List<Object> parameters,
         List<ValidationError> errors
 ) {
@@ -22,18 +23,8 @@ public record ErrorResponse(
             HttpStatus status,
             String detail,
             String instance,
-            String errorCode
-    ) {
-        return of(type, title, status, detail, instance, errorCode, null, null);
-    }
-
-    public static ErrorResponse of(
-            String type,
-            String title,
-            HttpStatus status,
-            String detail,
-            String instance,
             String errorCode,
+            String traceId,
             List<Object> parameters,
             List<ValidationError> errors
     ) {
@@ -44,13 +35,16 @@ public record ErrorResponse(
                 detail,
                 instance,
                 errorCode,
+                traceId,
                 emptyToNull(parameters),
                 emptyToNull(errors)
         );
     }
 
     private static <T> List<T> emptyToNull(List<T> values) {
-        return values == null || values.isEmpty() ? null : List.copyOf(values);
+        return values == null || values.isEmpty()
+                ? null
+                : List.copyOf(values);
     }
 
     public record ValidationError(
@@ -58,9 +52,11 @@ public record ErrorResponse(
             String reason
     ) {
 
-        public static ValidationError of(String field, String reason) {
+        public static ValidationError of(
+                String field,
+                String reason
+        ) {
             return new ValidationError(field, reason);
         }
     }
 }
-
