@@ -1,5 +1,6 @@
 package com.concert.backend.member.domain;
 
+import com.concert.backend.common.audit.BaseAuditEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -16,7 +17,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "v1_members")
 @Entity
-public class Member {
+public class Member extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

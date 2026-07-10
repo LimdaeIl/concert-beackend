@@ -1,5 +1,6 @@
 package com.concert.backend.reservation.domain;
 
+import com.concert.backend.common.audit.BaseAuditEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,7 +22,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "v1_reservations")
 @Entity
-public class Reservation {
+public class Reservation extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

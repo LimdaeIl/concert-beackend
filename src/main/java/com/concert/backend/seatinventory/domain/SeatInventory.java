@@ -1,5 +1,6 @@
 package com.concert.backend.seatinventory.domain;
 
+import com.concert.backend.common.audit.BaseAuditEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,7 +18,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "v1_seat_inventories")
 @Entity
-public class SeatInventory {
+public class SeatInventory extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
